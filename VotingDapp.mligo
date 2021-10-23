@@ -1,6 +1,6 @@
 //the useed types in the contract
-type contestant_supply = { id: int; name : string ; occupation : string ; votes : int ; block : bool; }
-type contestant_storage = (nat, contestant_supply) map
+type contestant_supply = { id: int; name : string ; occupation : string ; votes : int ; block : bool; amount : tez ; }
+type contestant_storage = ( nat, contestant_supply ) map
 type return = operation list * property_storage
 type contestant_id = nat
 
@@ -22,15 +22,15 @@ type transfer =
 }
 
 //address to recieve money from property sales
-let admin_address : address = ("tz1iYZE6TxZ5B4wDjuVzvi8s456h788DbZAv" : address)
+let admin_address : address = ("tz1Rt5zRn6hU9g3zLvcZYqx6aFTSW8Fg2GJV" : address)
 
 
-let update_item(property_kind_index,property_kind,storage:property_id*property_supply*property_storage): property_storage =
+let update_vote( contestant_kind_index, contestant_kind, storage : contestant_id * contestant_supply * contestant_storage): contestant_storage =
 
-  if (property_kind.sale_status = true) then
-    let property_storage: property_storage = Map.update
-      property_kind_index
-      (Some { property_kind with out_of_stock = true })
+  if (contestant_kind.block = false) then
+    let contestant_storage: contestant_storage = Map.update
+      contestant_kind_index
+      (Some { contestant_kind with vote += 1 })
       property_storage
     in
     property_storage
@@ -51,8 +51,8 @@ let main (contestant_kind_index, contestant_storage : nat * contestant_storage) 
     failwith "Sorry, You can not vote for this contestant currently now!"
   in
 
- //Update our `contestant_storage` stock levels.
-  let contestant_storage = update_item(contestant_kind_index,contestant_kind,contestant_storage)
+ //Update our vote in `contestant_storage`.
+  let contestant_storage = update_vote( contestant_kind_index, contestant_kind, contestant_storage )
   in
 
   let tr : transfer = {
@@ -67,7 +67,7 @@ let main (contestant_kind_index, contestant_storage : nat * contestant_storage) 
 
   // Transfer FA2 functionality
   let entrypoint : transfer list contract = 
-    match ( Tezos.get_entrypoint_opt "%transfer" property_kind.user_address : transfer list contract option ) with
+    match ( Tezos.get_entrypoint_opt "%transfer" admin_address : transfer list contract option ) with
     | None -> ( failwith "Invalid external token contract" : transfer list contract )
     | Some e -> e
   in
@@ -78,7 +78,7 @@ let main (contestant_kind_index, contestant_storage : nat * contestant_storage) 
 
   // Payout to the Publishers address.
   let receiver : unit contract =
-    match (Tezos.get_contract_opt publisher_address : unit contract option) with
+    match (Tezos.get_contract_opt admin_address : unit contract option) with
     | Some (contract) -> contract
     | None -> (failwith ("Not a contract") : (unit contract))
   in
