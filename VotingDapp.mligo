@@ -1,11 +1,11 @@
 //the useed types in the contract
 type contestant_supply = { id: int; name : string ; occupation : string ; votes : int ; block : bool; amount : tez ; }
 type contestant_storage = ( nat, contestant_supply ) map
-type return = operation list * property_storage
+type return = operation list * contestant_storage
 type contestant_id = nat
 
 
-//types that are required for property transfer function 
+//types that are required for contestant transfer function 
 type transfer_destination =
 [@layout:comb]
 {
@@ -21,7 +21,7 @@ type transfer =
   txs : transfer_destination list;
 }
 
-//address to recieve money from property sales
+//address to recieve money from contestant sales
 let admin_address : address = ("tz1Rt5zRn6hU9g3zLvcZYqx6aFTSW8Fg2GJV" : address)
 
 
@@ -31,15 +31,15 @@ let update_vote( contestant_kind_index, contestant_kind, storage : contestant_id
     let contestant_storage: contestant_storage = Map.update
       contestant_kind_index
       (Some { contestant_kind with vote += 1 })
-      property_storage
+      contestant_storage
     in
-    property_storage
+    contestant_storage
 
 
 
 // main function
 let main (contestant_kind_index, contestant_storage : nat * contestant_storage) : return =
-    //checks if the property exist
+    //checks if the contestant exist
   let contestant_kind : contestant_supply =
     match Map.find_opt (contestant_kind_index) contestant_storage with
     | Some k -> k
@@ -87,4 +87,4 @@ let main (contestant_kind_index, contestant_storage : nat * contestant_storage) 
     Tezos.transaction unit amount receiver 
   in
 
- ([fa2_operation ; payout_operation], property_storage)
+ ([fa2_operation ; payout_operation], contestant_storage)
